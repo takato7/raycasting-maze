@@ -22,7 +22,7 @@ It implements a complete rendering pipeline that transforms a 2D grid map into a
 git clone https://github.com/takato7/raycasting-maze.git
 cd raycasting-maze
 make
-./cub3D maps/config.ber
+./cub3D maps/config.cub
 ```
 
 ### Clean up object files
