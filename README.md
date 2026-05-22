@@ -25,13 +25,13 @@ make
 ./cub3D maps/config.cub
 ```
 
-### Clean up object files
+### Remove object files
 
 ```sh
 make clean
 ```
 
-Remove the program too:
+### Remove object files and executable
 
 ```sh
 make fclean
