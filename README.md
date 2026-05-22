@@ -2,9 +2,9 @@
 
 ## Overview
 
-This project is a first-person pseudo-3D maze inspired by early games such as [Wolfenstein 3D](http://users.atw.hu/wolf3d/).
+This project is a first-person pseudo-3D maze built in C using MiniLibX and X11.
 
-Built in C using MiniLibX and X11, it implements a complete rendering pipeline that transforms a 2D grid map into a real-time first-person view using raycasting and grid-based collision logic.
+It implements a complete rendering pipeline that transforms a 2D grid map into a real-time first-person projection using raycasting and grid-based collision logic.
 
 ## Key Features
 
@@ -157,6 +157,7 @@ If any misconfiguration is detected, the program must exit cleanly
 
 ### Example
 
+```
 NO ./textures/wall_north.xpm
 SO ./textures/wall_south.xpm
 WE ./textures/wall_west.xpm
@@ -178,6 +179,7 @@ C 40,40,40
 10D000001
 1000N0001
 111111111
+```
 
 ## Constraints
 
@@ -209,6 +211,7 @@ It uses [MiniLibX](https://qst0.github.io/ft_libgfx/man_mlx.html), which is dist
 
 ## References
 
+- [Wolfenstein 3D](http://users.atw.hu/wolf3d/)
 - [Raycasting tutorial by Lode Vandevenne](https://lodev.org/cgtutor/raycasting.html)
 - [42 Docs MiniLibX](https://harm-smits.github.io/42docs/libs/minilibx)
 
