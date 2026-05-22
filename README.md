@@ -1,104 +1,183 @@
-# Raycasting Maze Engine
+# Raycasting 3D Maze
 
-A C-based real-time raycasting engine that renders a pseudo-3D world from a 2D grid map using a frame-based rendering loop and DDA-based raycasting. Built with MiniLibX and X11 (XQuartz on macOS).
-
----
-## Demo
-
-![demo](assets/demo.gif)
-
----
 ## Overview
 
-This project is a lightweight raycasting engine inspired by early 3D games such as Wolfenstein 3D.
+This project is a first-person pseudo-3D maze inspired by early games such as [Wolfenstein 3D](http://users.atw.hu/wolf3d/).
 
-It transforms a 2D grid-based map into a real-time pseudo-3D rendering using raycasting.
-
-The goal of this project is not only to implement raycasting, but also to understand low-level graphics systems, event-driven architecture, and OS-dependent rendering pipelines.
+Built in C using MiniLibX and X11, it implements a complete rendering pipeline that transforms a 2D grid map into a real-time first-person view using raycasting and grid-based collision logic.
 
 ## Key Features
 
-- Raycasting-based pseudo-3D rendering
-- DDA (Digital Differential Analyzer) algorithm for fast grid traversal
-- Frame-based rendering loop (game loop architecture)
-- Real-time keyboard input handling
-- Collision detection system
-- Map parsing and strict validation
+- Frame-based rendering loop (game loop)
+- Event-driven input system
+- Raycasting and grid-based collision detection
+- Strict map validation system
 - X11-based rendering via MiniLibX
 
----
+## Usage
+
+### Build and Run
+
+```sh
+git clone https://github.com/takato7/raycasting-maze.git
+cd raycasting-maze
+make
+./cub3D maps/config.ber
+```
+
+### Clean up object files
+
+```sh
+make clean
+```
+
+Remove the program too:
+
+```sh
+make fclean
+```
+
+### Movement & Camera
+
+- W / A / S / D : Move (forward / left / backward / right)
+- ← / → : Rotate view
+- Mouse : Rotate view (when window is focused)
+
+### Interaction
+
+- SPACE : Open / close door
+
+### UI
+
+- M : Toggle minimap
+- F : Toggle FPS counter
+
+### View Settings
+
+- Numpad * / Numpad / : Increase / decrease FOV (Field of View)
+- Numpad + / Numpad - : Increase / decrease mouse sensitivity
+- Numpad 0 : Reset mouse sensitivity to default
+
+### System
+
+- ESC : Quit program
 
 ## Architecture
 
-This project is built on a classic graphics stack that relies on X11 on Unix-like systems.
+The engine is built around a **frame-based game loop architecture** with a clear separation between input handling, state update, and rendering as follows: 
 
-### Rendering Pipeline
+- Input layer → updates only state
+- Engine layer → computes raycasting and collisions
+- Rendering layer → draws full frame from state
 
 ```
-Input Events (Keyboard)
-↓
+Input Events (Keyboard / Mouse)
+        ↓
 Game State Update
-↓
-Frame Loop (mlx_loop)
-↓
-Raycasting Engine (DDA)
-↓
-MiniLibX Rendering Layer
-↓
-X Server (XQuartz / Xorg)
-↓
-Window Display
+        ↓
+Raycasting Engine
+        ↓
+Frame Renderer
+        ↓
+MiniLibX
+        ↓
+X11 Server (XQuartz / Xorg)
+        ↓
+Display Output
 ```
 
-On macOS, XQuartz is required to provide the X11 server environment.
+Rendering is decoupled from input events and handled exclusively inside the main frame loop.
 
----
+## Raycasting Algorithm
 
-## Technical Details
+The rendering pipeline is based on column-wise ray projection.
 
-### Rendering Model
+For each screen column:
 
-The engine uses a frame-based rendering loop.
-
-Each frame consists of:
-
-1. Input processing (event-driven)
-2. State update (player movement, direction)
-3. Full scene re-render using raycasting
-4. Display update via MiniLibX
-
-This design ensures deterministic frame updates and avoids partial rendering artifacts.
-
-### Raycasting Algorithm (DDA)
-
-The rendering engine is based on a classic raycasting approach using the Digital Differential Analyzer (DDA) algorithm.
-
-Each frame, rays are cast from the player's position into the 2D map grid to detect wall intersections efficiently.
-
-The DDA algorithm allows stepping through the grid cell-by-cell instead of performing continuous ray intersection calculations, significantly improving performance.
-
-This approach is widely used in early 3D engines such as Wolfenstein 3D.
+1. A ray is cast from the player position
+2. DDA-based grid traversal determines the first wall cell intersected by the ray
+3. Perpendicular wall distance is computed
+4. Projected wall height is calculated
+5. A vertical textured stripe is rendered
 
 ## Map System
 
-The map is represented as a 2D grid loaded from a `.ber` file.
+The engine loads a scene description file with the `.cub` extension.
 
-### Validation Rules:
+The file contains rendering configuration and a grid-based map used for raycasting.
 
-- Map must be rectangular
-- Must be fully enclosed by walls
-- Must contain:
-  - One player start position
-  - At least one exit
-  - At least one collectible
+### File Structure
 
-### Path Validation:
+A `.cub` file consists of two parts:
 
-A flood-fill algorithm is used to ensure:
+1. Configuration section (textures, colors)
+2. Map section (must be the last element)
 
-- All collectibles are reachable
-- Exit is reachable from player spawn
+### Configuration Elements
 
+Each element starts with a type identifier followed by its parameters.
+
+#### Textures
+
+- NO  : North wall texture
+- SO  : South wall texture
+- WE  : West wall texture
+- EA  : East wall texture
+- DO  : Door texture
+- DOS : Door side texture
+- SQ0 ~ SQ3 : Sprite animation frames
+
+#### Colors
+
+- F : Floor color (R,G,B)
+- C : Ceiling color (R,G,B)
+
+### Map Format
+
+The map must:
+
+- Be composed of valid characters only:
+  - `0`          : Empty space
+  - `1`          : Wall
+  - `N, S, E, W` : Player spawn + orientation
+  - `C`          : Sprite
+  - `D`          : Door
+- Be fully enclosed by walls
+- Contain exactly one player spawn
+- Be the last element in the file
+
+### Parsing Rules
+
+- Elements can be separated by one or more empty lines
+- Order of configuration elements is not fixed
+- Spaces are valid within the map and must be handled correctly
+- The map is parsed exactly as written in the file
+
+If any misconfiguration is detected, the program must exit cleanly
+
+### Example
+
+NO ./textures/wall_north.xpm
+SO ./textures/wall_south.xpm
+WE ./textures/wall_west.xpm
+EA ./textures/wall_east.xpm
+
+DO ./textures/door_front.xpm
+DOS ./textures/door_side.xpm
+
+SQ0 ./textures/sprite_0.xpm
+SQ1 ./textures/sprite_1.xpm
+SQ2 ./textures/sprite_2.xpm
+SQ3 ./textures/sprite_3.xpm
+
+F 70,8,8
+C 40,40,40
+
+111111111
+1000C0001
+10D000001
+1000N0001
+111111111
 
 ## Constraints
 
@@ -112,10 +191,10 @@ This project was implemented under strict constraints:
 
 ## Platform Dependencies
 
-This project depends on system-level graphics infrastructure:
+This project depends on X11 for rendering:
 
-- X11 (Linux)
-- XQuartz (macOS)
+- Linux: Xorg
+- macOS: XQuartz
 
 As a result, the build and runtime behavior may vary depending on:
 
@@ -124,6 +203,15 @@ As a result, the build and runtime behavior may vary depending on:
 - Library paths
 - X11 runtime availability
 
+## License
+
+It uses [MiniLibX](https://qst0.github.io/ft_libgfx/man_mlx.html), which is distributed under the BSD 2-Clause License.
+
+## References
+
+- [Raycasting tutorial by Lode Vandevenne](https://lodev.org/cgtutor/raycasting.html)
+- [42 Docs MiniLibX](https://harm-smits.github.io/42docs/libs/minilibx)
+
 ## Key Learnings
 
 This project provided hands-on experience with:
@@ -131,7 +219,6 @@ This project provided hands-on experience with:
 - Low-level graphics pipeline (X11-based rendering)
 - Event-driven architecture in real-time systems
 - Frame-based rendering loops (game loop design)
-- System-level dependency management
 - Cross-platform build issues (macOS vs Linux)
 - C memory management in performance-critical systems
 
@@ -147,8 +234,6 @@ This will enable:
 - Consistent X11 or virtual display environments
 - Simplified setup for contributors
 
----
-
 ### 2. OS-Independent Rendering Backend
 
 Future versions may replace X11/MiniLibX with:
@@ -156,8 +241,6 @@ Future versions may replace X11/MiniLibX with:
 - SDL2
 - GLFW + OpenGL
 - Web-based rendering (WebGL / Canvas / WebAssembly)
-
----
 
 ### 3. Web-Based Visualization (Experimental)
 
